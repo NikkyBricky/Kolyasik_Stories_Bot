@@ -1,3 +1,5 @@
+import logging
+
 import requests
 import os
 from dotenv import load_dotenv
@@ -33,6 +35,10 @@ def count_tokens(collection) -> int:
         headers=headers,
         json=data
     ).json()
-    if result:
+
+    try:
         result = result['tokens']
-    return len(result)
+        logging.error("Токены для промпта успешно подсчитаны.")
+        return len(result)
+    except KeyError:
+        logging.error("Не удалось посчитать токены для промпта, так как токен недействителен.")

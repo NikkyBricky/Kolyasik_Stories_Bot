@@ -70,24 +70,27 @@ def find_user_data(table_name, user_id):
 def update_user_data(table_name, user_id, column_name, value):
     query = f'''UPDATE {table_name} SET {column_name} = ? WHERE user_id = ?;'''
     process_query(query, [value, user_id])
-    logging.info(f"база данных успешно обновлена, колонка: {column_name}, user_id - {user_id}")
+    logging.info(f"база данных успешно обновлена, таблица: {table_name}, колонка: {column_name}, user_id: {user_id}")
 
 
 def count_users():
     query = "SELECT COUNT(DISTINCT user_id) FROM prompts"
     counter = list(process_query(query, None))
+    logging.info(f"Успешно подсчитано количество пользователей {counter[0][0]}")
     return counter[0][0]
 
 
 def find_current_session(user_id):
     query = f'''SELECT COUNT(DISTINCT session_id) FROM prompts WHERE user_id = ?;'''
     counter = process_query(query, [user_id])
+    logging.info(f"Текущая сессия для пользователя с user_id: {user_id} успешно найдена: {counter[0][0]}.")
     return counter[0][0]
 
 
 def find_prompts_by_session(user_id, session_id):
     query = "SELECT role, text FROM prompts WHERE user_id = ? and session_id = ?"
     prompts = process_query(query, [user_id, session_id])
+    logging.info(f"Промпты пользователя с user_id: {user_id} в сессии {session_id} успешно найдены")
     return prompts
 
 
@@ -101,6 +104,9 @@ def find_assistant_text_by_session(user_id, session_id):
     content = process_query(query, [user_id, session_id])
     if content:
         content = content[0]["text"]
+        logging.info(f"Ответ нейросети для пользователя с user_id: {user_id} в сессии {session_id} успешно найден.")
+    else:
+        logging.info(f"Не удалось получить ответ нейросети для пользователя с user_id: {user_id} в сессии {session_id}")
     return content
 
 
@@ -114,6 +120,9 @@ def find_text_by_role_and_user_id(user_id, role):
     content = process_query(query, [user_id, role])
     if content:
         content = content[0]["text"]
+        logging.info(f"Контент для пользователя с user_id: {user_id} от роли: {role} успешно найден.")
+    else:
+        logging.info(f"Не удалось получить контент для пользователя с user_id: {user_id} от роли: {role}")
     return content
 
 
@@ -121,22 +130,27 @@ def add_prompt_to_database(user_id, role, text, tokens, session_id):
     query = '''INSERT INTO prompts (user_id, role, text, tokens, session_id) VALUES(?, ?, ?, ?, ?)'''
     values = [user_id, role, text, tokens, session_id]
     process_query(query, values)
+    logging.info(f"Промпт от пользователя с user_id: {user_id} в сессии {session_id} успешно добавлен в базу данных")
 
 
 def find_latest_prompt(user_id):
     query = f"SELECT * FROM prompts WHERE user_id = ? ORDER BY id DESC LIMIT 1"
     prompt_data = process_query(query, [user_id])
     if prompt_data:
+        logging.info(f"Последний промпт пользователя с user_id: {user_id} успешно найден")
         prompt_data = prompt_data[0]
+    else:
+        logging.info(f"Не удалось получить последний промпт пользователя с user_id: {user_id} успешно найден")
     return prompt_data
 
 
-def delete_settings(table_name, user_id):
-    query = f"DELETE FROM {table_name} WHERE user_id = ?"
+def delete_settings(user_id):
+    query = f"DELETE FROM settings WHERE user_id = ?"
     process_query(query, [user_id])
-    logging.info(f"Пользователь с user_id = {user_id} успешно удален из базы данных")
+    logging.info(f"Настройки пользователя с user_id = {user_id} успешно удалены из базы данных")
 
 
 def delete_process_answer():
     query = "UPDATE settings SET processing_answer = 0"
     process_query(query, None)
+    logging.info(f"Ошибка взаимодействия с нейросетью успешно исправлена")

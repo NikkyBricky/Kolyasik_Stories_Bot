@@ -1,14 +1,16 @@
+import logging
+
 import requests
 from database import add_prompt_to_database, find_assistant_text_by_session, find_prompts_by_session
 from config import SYSTEM_PROMPT, END_PROMPT, CONTINUE_PROMPT, MAX_TOKENS_IN_SESSION, MAX_MODEL_TOKENS
 from check_tokens import count_tokens
-
+from make_gpt_token import get_creds
 import os
 from dotenv import load_dotenv
 from config import GPT_MODEL
 load_dotenv()
 
-token = os.getenv("GPT_TOKEN")
+token = get_creds()
 folder_id = os.getenv("FOLDER_ID")
 
 
@@ -33,6 +35,8 @@ class GPT:
             system_content = END_PROMPT
 
         tokens_in_system = count_tokens([{"role": "system", "text": system_content}])
+        if not tokens_in_system:  # если токен недействителен
+            return "Ошибка ответа. Произошла ошибка на сервере, приходите позже."
         tokens_in_system += tokens
 
         add_prompt_to_database(user_id, "system", system_content, tokens_in_system, session_id)
@@ -63,14 +67,18 @@ class GPT:
                 {"role": "assistant", "text": assistant_content}
             ]
         }
+        try:
+            result = requests.post(self.URL, headers=self.HEADERS, json=data)
+            if 200 <= result.status_code < 400:
+                result = result.json()['result']['alternatives'][0]['message']['text']
+                tokens_in_assistant_content = count_tokens([{"role": "assistant", "text": result}])
+                tokens_in_assistant_content += tokens_in_user_content
 
-        result = requests.post(self.URL, headers=self.HEADERS, json=data)
-        if 200 <= result.status_code < 400:
-            result = result.json()['result']['alternatives'][0]['message']['text']
-            tokens_in_assistant_content = count_tokens([{"role": "assistant", "text": result}])
-            tokens_in_assistant_content += tokens_in_user_content
-
-            add_prompt_to_database(user_id, "assistant", assistant_content + result,
-                                   tokens_in_assistant_content, session_id)
-            return result
-        return f"Код ошибки: {result.status_code}, Ошибка {result.json()['error']}"
+                add_prompt_to_database(user_id, "assistant", assistant_content + result,
+                                       tokens_in_assistant_content, session_id)
+                return result
+            logging.error(f"Код ошибки: {result.status_code}, Ошибка {result.json()['error']}")
+            return f"Ошибка ответа. Код ошибки: {result.status_code}, ошибка {result.json()['error']}"
+        except Exception as e:
+            logging.error(f"Произошла непредвиденная ошибка: {e}")
+            return "Ошибка ответа. Произошла непредвиденная ошибка. Приходите позже."

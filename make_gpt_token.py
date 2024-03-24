@@ -1,10 +1,11 @@
 import json
+import logging
 import os
 import time
 
 import requests
 
-TOKEN_PATH = "~/Kolyasik_stories/token"
+TOKEN_PATH = "creds/token.json"
 
 
 def create_new_token():
@@ -23,9 +24,9 @@ def create_new_token():
             with open(TOKEN_PATH, "w") as token_file:
                 json.dump(token_data, token_file)
         else:
-            print(f"Не удалось получить токен. Статус код: {response.status_code}")
+            logging.error(f"Не удалось получить токен. Статус код: {response.status_code}")
     except Exception as e:
-        print(f"Произошла непредвиденная ошибка: {e}")
+        logging.error(f"Произошла непредвиденная ошибка: {e}")
 
 
 def get_creds():

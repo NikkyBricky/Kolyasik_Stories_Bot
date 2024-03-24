@@ -1,3 +1,4 @@
+# -------------------------------------------------------Импорты--------------------------------------------------------
 import telebot
 import os
 from dotenv import load_dotenv
@@ -8,6 +9,7 @@ from database import (create_db, create_settings_table, create_prompts_table, ad
 from config import make_prompt, MAX_SESSIONS, MAX_TOKENS_IN_SESSION, MAX_USERS
 from gpt import GPT
 import logging
+# ---------------------------------------------Получение данных---------------------------------------------------------
 gpt = GPT()
 load_dotenv()
 
@@ -15,6 +17,7 @@ token = os.getenv("BOT_TOKEN")
 admin_id = int(os.getenv("ADMIN_ID"))
 bot = telebot.TeleBot(token=token)
 
+# ---------------------------------------------Создание таблиц----------------------------------------------------------
 create_db()
 create_prompts_table()
 create_settings_table()
@@ -22,14 +25,44 @@ create_settings_table()
 
 main_menu_keyboard = ReplyKeyboardMarkup(resize_keyboard=True).add("Создать историю!")
 main_menu_keyboard.add("Статистика", "История целиком")
+# другие клавиатуры создавал отдельно, так как в них происходит много изменений во врем работы бота
+
+# -----------------------------------------------------Логи-------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H",
+    filename="log_file.txt",
+    filemode="w",
+    force=True
+)
 
 
-# ----------------------------------------------------------------------------------------------------------------------
+@bot.message_handler(commands=['debug'])
+def send_logs(message):
+    user_id = message.chat.id
+
+    if user_id == admin_id:
+        try:
+
+            with open("log_file.txt", "rb") as f:
+                bot.send_document(message.chat.id, f)
+
+        except telebot.apihelper.ApiTelegramException:
+
+            bot.send_message(message.chat.id, "Логов пока нет.")
+
+    else:
+        bot.send_message(message.chat.id, "У Вас недостаточно прав для использования этой команды.")
+
+
+# ----------------------------------------------------Различные проверки------------------------------------------------
 def check_user(table_name, user_id, message=None):
     if not find_user_data(table_name, user_id):
         if table_name == "prompts":
             if count_users() == MAX_USERS:
                 bot.send_message(message.chat.id, "Достигнут лимит пользователей. Приходите позже.")
+                logging.info(f"Попытка взаимодействия с бот, когда достигнут лимит пользователей.")
                 return False
             return True
         add_user_to_database(table_name, user_id)
@@ -40,7 +73,7 @@ def check_processing_answer(user_id, message):
     data = find_user_data("settings", user_id)
     if data:
         if data['processing_answer'] == 1:
-            logging.debug("попытка задать еще один вопрос, когда нейросеть уже генерирует другой")
+            logging.debug("попытка что-то сделать, когда нейросеть уже генерирует ответ.")
 
             bot.reply_to(message, "Нейросеть уже придумывает историю для вас. Если хотите что-то добавить, сначала"
                                   " дождитесь ответа от нее.")
@@ -48,8 +81,10 @@ def check_processing_answer(user_id, message):
     return False
 
 
+# -------------------------------------------------Стартовые функции----------------------------------------------------
 @bot.message_handler(commands=["start"])
 def start_bot(message):
+    logging.info("Бот запущен")
     user_id = message.from_user.id
     if not check_user("prompts", user_id, message=message):  # если достигнут лимит пользователей
         return
@@ -102,10 +137,12 @@ def about_bot(message):
                                       f'<b>История целиком</b> - покажет вашу последнюю созданную историю целиком.\n\n'
                                       f'<b>Создать историю</b> - начните создание истории. (сессия не начинается)',
                      reply_markup=main_menu_keyboard, parse_mode="html")
+    logging.info(f"Информация о боте успешно доставлена")
 
 
+# ---------------------------------------------Начало создания истории--------------------------------------------------
 @bot.message_handler(content_types=["text"], func=lambda message: message.text.lower() == "создать историю!")
-def make_genre(message):
+def make_genre(message):  # выбор жанра
     user_id = message.from_user.id
     if not check_user("prompts", user_id, message=message):  # если достигнут лимит пользователей
         return
@@ -116,6 +153,8 @@ def make_genre(message):
     if find_current_session(user_id) + 1 > MAX_SESSIONS:
         bot.send_message(message.chat.id, "Вы исчерпали лимит сессий! Возвращайтесь позже.",
                          reply_markup=main_menu_keyboard)
+        logging.debug(f"попытка пользователя с user_id: {user_id} "
+                      f"создать новую историю, когда все его сессии исчерпаны")
         return
 
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True).add("Комедия", "Боевик")
@@ -124,12 +163,13 @@ def make_genre(message):
     bot.send_message(message.chat.id, "Для начала создания истории выберите <b>жанр</b> из предложенных:",
                      parse_mode="html", reply_markup=keyboard)
 
-    delete_settings("settings", user_id)
+    delete_settings(user_id)
     check_user("settings", user_id)
+
     bot.register_next_step_handler(message, make_character)
 
 
-def make_character(message, is_next_step=False):
+def make_character(message, is_next_step=False):  # выбор персонажа
     if message.text not in ["Комедия", "Боевик", "Хоррор", "Драма"] and not is_next_step:
         if message.text.lower() == "выход":
             bot.send_message(message.chat.id, "Подготовка к созданию истории остановлена. Если хотите начать "
@@ -170,7 +210,7 @@ def make_character(message, is_next_step=False):
     bot.register_next_step_handler(message, make_place)
 
 
-def make_place(message, is_next_step=False):
+def make_place(message, is_next_step=False):  # выбор сеттинга
     if message.text not in ["Луффи", "Робби Локамп", "Лара Крофт", "Мейбл Пайнз"] and not is_next_step:
         if check_restart(message):
             return
@@ -199,7 +239,7 @@ def make_place(message, is_next_step=False):
     bot.register_next_step_handler(message, add_info)
 
 
-def add_info(message, is_next_step=False):
+def add_info(message, is_next_step=False):  # дополнительная информация
     if message.text not in ["Океан", "Катастрофа", "Затерянный остров"] and not is_next_step:
         if check_restart(message):
             return
@@ -251,7 +291,7 @@ def check_ans(message):
     info = settings_data["additional_info"]
 
     if info:
-        info += ", " + message.text
+        info += ", " + message.text  # Разделение сообщений пользователя для доп. информации
     else:
         info += message.text
     info += ". "
@@ -267,11 +307,13 @@ def check_restart(message):
     return False
 
 
+# ---------------------------------------------Взаимодействие с нейросетью----------------------------------------------
 def start_generating(message, session_id):
     if not message.text:
         bot.send_message(message.chat.id, "Кажется, вы отправили не текстовый запрос. Я пока не знаю как работать"
                                           "с такими. Пожалуйста, отправьте текстовый запрос.")
         bot.register_next_step_handler(message, start_generating, session_id)
+        logging.info(f"попытка отправки нейросети не текстового запроса.")
         return
 
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True).add("Завершить историю")
@@ -283,6 +325,7 @@ def start_generating(message, session_id):
     if session_id > MAX_SESSIONS:
         bot.send_message(message.chat.id, "Вы исчерпали лимит сессий! Возвращайтесь позже.",
                          reply_markup=main_menu_keyboard)
+        logging.info(f"Пользователем достигнут лимит сессий.")
         return
 
     prompt = message.text
@@ -290,6 +333,7 @@ def start_generating(message, session_id):
     if prompt == "Выход":
         bot.send_message(message.chat.id, 'Хорошо! Чтобы создать новую историю, нажмите на кнопку "Создать историю!"',
                          reply_markup=main_menu_keyboard)
+        logging.info(f"Выход осуществлен успешно")
         return
 
     if prompt == "История целиком":
@@ -341,11 +385,16 @@ def start_generating(message, session_id):
 
     update_user_data("settings", user_id, "processing_answer", 0)
 
+    if "Ошибка ответа." in answer:  # на случай ошибки взаимодействия с нейросетью
+        bot.send_message(message.chat.id, answer, reply_markup=keyboard)
+        return
+
     bot.delete_message(chat_id=message.chat.id, message_id=msg.message_id)
 
     tokens_in_session = find_latest_prompt(user_id)["tokens"]
-    if not answer or tokens_in_session > MAX_TOKENS_IN_SESSION:  # если достигнут лимит токенов
 
+    if not answer or tokens_in_session > MAX_TOKENS_IN_SESSION:  # если достигнут лимит токенов
+        logging.info(f"Пользователем достигнут лимит токенов в сессии.")
         keyboard = ReplyKeyboardMarkup(resize_keyboard=True).add("Выход")
         answer = find_text_by_role_and_user_id(user_id, "assistant")
 
@@ -367,6 +416,7 @@ def start_generating(message, session_id):
 
     bot.send_message(message.chat.id, f"<b>История</b> (сессия {session_id}/{MAX_SESSIONS}):\n\n{answer}",
                      parse_mode="html", reply_markup=keyboard)  # отправка ответа нейросети
+    bot.send_message(message.chat.id, "Напишите продолжение истории:")
 
     if message.text == "Завершить историю" or prompt == "Завершить историю":
         bot.send_message(message.chat.id, "Вот и вся история!", reply_markup=main_menu_keyboard)
@@ -383,6 +433,7 @@ def start_generating(message, session_id):
     bot.register_next_step_handler(message, start_generating, session_id)
 
 
+# ---------------------------------------------Другие функции-----------------------------------------------------------
 @bot.message_handler(content_types=["text"], func=lambda message: message.text.lower() == "история целиком")
 def whole_story(message):
     user_id = message.from_user.id
@@ -399,6 +450,7 @@ def whole_story(message):
     else:
         story = "<b>Предоставляю вам вашу последнюю историю целиком:</b>\n\n" + story
     bot.send_message(message.chat.id, story, parse_mode="html")
+    logging.info("Последняя история успешно отправлена пользователю.")
 
 
 @bot.message_handler(content_types=["text"], func=lambda message: message.text.lower() == "статистика")
@@ -425,6 +477,7 @@ def send_stats(message):
                                       f"токенов.\n\n"
                                       f"<b>Максимальное количество токенов в сессии:</b> {MAX_TOKENS_IN_SESSION}",
                      parse_mode="html")
+    logging.info(f"Текущая статистика успешно отправлена пользователю.")
 
 
 # на случай, если бот был перезапущен во время исполнения запроса к нейросети
