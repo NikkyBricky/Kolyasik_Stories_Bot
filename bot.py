@@ -508,4 +508,5 @@ def any_msg(message):
                      reply_markup=main_menu_keyboard)
 
 
-bot.infinity_polling()
+if __name__ == "__main__":
+    bot.infinity_polling()
