@@ -416,7 +416,6 @@ def start_generating(message, session_id):
 
     bot.send_message(message.chat.id, f"<b>История</b> (сессия {session_id}/{MAX_SESSIONS}):\n\n{answer}",
                      parse_mode="html", reply_markup=keyboard)  # отправка ответа нейросети
-    bot.send_message(message.chat.id, "Напишите продолжение истории:")
 
     if message.text == "Завершить историю" or prompt == "Завершить историю":
         bot.send_message(message.chat.id, "Вот и вся история!", reply_markup=main_menu_keyboard)
@@ -430,6 +429,7 @@ def start_generating(message, session_id):
         bot.send_message(message.chat.id, f"Вы потратили больше половины токенов: "
                                           f"<b>{tokens_in_session}/{MAX_TOKENS_IN_SESSION}</b>", parse_mode="html")
 
+    bot.send_message(message.chat.id, "Напишите продолжение истории:")
     bot.register_next_step_handler(message, start_generating, session_id)
 
 
