@@ -1,6 +1,6 @@
 [Unit]
 Description=story_bot for deploy
-
+After=multi-user.target
 [Service]
 Type=simple
 ExecStart=/home/student/Kudesniki_review_api/venv/bin/python3 /home/student/Kolyasik_Stories_Bot/bot.py
