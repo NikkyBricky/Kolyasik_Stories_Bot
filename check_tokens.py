@@ -4,9 +4,10 @@ import requests
 import os
 from dotenv import load_dotenv
 from config import GPT_MODEL
+from make_gpt_token import get_creds
 load_dotenv()
 
-token = os.getenv("GPT_TOKEN")
+token = get_creds()
 folder_id = os.getenv("FOLDER_ID")
 
 
