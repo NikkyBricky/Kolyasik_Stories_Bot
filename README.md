@@ -20,8 +20,11 @@ If you want to make your bot with the functions like here, I suggest you to:
  4. If you want to move bot to the server, you may not use GPT_TOKEN, but func get_creds() from file make_gpt_token.py to get token automatically  
 
 If you just want to see it work:
- 1. go to https://t.me/fascinating_stories_bot
+ 1. go to https://t.me/fascinating_stories_bot (bot is launched on cloud)
  2. Choose parameters 
  3. Create your stories
 
 Enjoy!
+
+# Bot logic
+![](https://github.com/NikkyBricky/Kolyasik_Stories_Bot/blob/main/bot_schema.png)
