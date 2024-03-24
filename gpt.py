@@ -39,6 +39,8 @@ class GPT:
         else:
             system_content = END_PROMPT
 
+        system_content += 'Не пиши никакие подсказки пользователю, что делать дальше. Он сам знает.'
+
         tokens_in_system = count_tokens([{"role": "system", "text": system_content}])
         if not tokens_in_system:  # если токен недействителен
             return "Ошибка ответа. Произошла ошибка на сервере, приходите позже."
