@@ -10,13 +10,20 @@ from dotenv import load_dotenv
 from config import GPT_MODEL, URL, TEMPERATURE
 load_dotenv()
 
-token = get_creds()
+
+def get_token():
+    try:
+        token = os.getenv("GPT_TOKEN")
+    except:
+        token = get_creds()
+
+    return token
 folder_id = os.getenv("FOLDER_ID")
 
 
 class GPT:
     def __init__(self):
-        self.HEADERS = {'Authorization': f'Bearer {token}',
+        self.HEADERS = {'Authorization': f'Bearer {get_token()}',
                         'Content-Type': 'application/json'}
 
     def ask_gpt(self, user_content: str, mode: str, session_id: int, user_id: int, special_mode: bool):

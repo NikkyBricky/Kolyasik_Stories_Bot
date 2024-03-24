@@ -10,6 +10,7 @@ from config import make_prompt, MAX_SESSIONS, MAX_TOKENS_IN_SESSION, MAX_USERS
 from gpt import GPT
 import logging
 # ---------------------------------------------Получение данных---------------------------------------------------------
+
 gpt = GPT()
 load_dotenv()
 

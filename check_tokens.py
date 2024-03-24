@@ -7,11 +7,20 @@ from config import GPT_MODEL
 from make_gpt_token import get_creds
 load_dotenv()
 
-token = get_creds()
+def get_token():
+    try:
+        token = os.getenv("GPT_TOKEN")
+    except:
+        token = get_creds()
+
+    return token
+
+
 folder_id = os.getenv("FOLDER_ID")
 
 
 def count_tokens(collection) -> int:
+    token = get_token()
     headers = {
         'Authorization': f'Bearer {token}',
         'Content-Type': 'application/json'
