@@ -12,12 +12,12 @@ load_dotenv()
 
 
 def get_token():
-    try:
-        token = os.getenv("GPT_TOKEN")
-    except:
+    token = os.getenv("GPT_TOKEN")
+    if not token:
         token = get_creds()
-
     return token
+
+
 folder_id = os.getenv("FOLDER_ID")
 
 

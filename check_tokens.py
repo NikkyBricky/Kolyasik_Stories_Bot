@@ -7,12 +7,11 @@ from config import GPT_MODEL
 from make_gpt_token import get_creds
 load_dotenv()
 
-def get_token():
-    try:
-        token = os.getenv("GPT_TOKEN")
-    except:
-        token = get_creds()
 
+def get_token():
+    token = os.getenv("GPT_TOKEN")
+    if not token:
+        token = get_creds()
     return token
 
 
