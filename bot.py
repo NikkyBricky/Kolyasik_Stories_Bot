@@ -387,10 +387,6 @@ def start_generating(message, session_id):
 
     update_user_data("settings", user_id, "processing_answer", 0)
 
-    if "Ошибка ответа." in answer:  # на случай ошибки взаимодействия с нейросетью
-        bot.send_message(message.chat.id, answer, reply_markup=keyboard)
-        return
-
     bot.delete_message(chat_id=message.chat.id, message_id=msg.message_id)
 
     tokens_in_session = find_latest_prompt(user_id)["tokens"]
@@ -414,6 +410,10 @@ def start_generating(message, session_id):
         bot.send_message(message.chat.id, text, parse_mode="html")
 
         bot.register_next_step_handler(message, start_generating, session_id)
+        return
+
+    if "Ошибка ответа." in answer:  # на случай ошибки взаимодействия с нейросетью
+        bot.send_message(message.chat.id, answer, reply_markup=keyboard)
         return
 
     bot.send_message(message.chat.id, f"<b>История</b> (сессия {session_id}/{MAX_SESSIONS}):\n\n{answer}",
