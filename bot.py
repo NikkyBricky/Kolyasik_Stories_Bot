@@ -1,3 +1,4 @@
+# Бунин Николай, 21 группа
 # -------------------------------------------------------Импорты--------------------------------------------------------
 import telebot
 import os
@@ -393,6 +394,9 @@ def start_generating(message, session_id):
 
     if not answer or tokens_in_session > MAX_TOKENS_IN_SESSION:  # если достигнут лимит токенов
         logging.info(f"Пользователем достигнут лимит токенов в сессии.")
+        if answer:  # если лимит токенов наступил после ответа нейросети
+            bot.send_message(message.chat.id, f"<b>История</b> (сессия {session_id}/{MAX_SESSIONS}):\n\n{answer}",
+                             parse_mode="html", reply_markup=keyboard)
         keyboard = ReplyKeyboardMarkup(resize_keyboard=True).add("Выход")
         answer = find_text_by_role_and_user_id(user_id, "assistant")
 
