@@ -7,7 +7,7 @@ from check_tokens import count_tokens
 from make_gpt_token import get_creds
 import os
 from dotenv import load_dotenv
-from config import GPT_MODEL
+from config import GPT_MODEL, URL, TEMPERATURE
 load_dotenv()
 
 token = get_creds()
@@ -16,10 +16,8 @@ folder_id = os.getenv("FOLDER_ID")
 
 class GPT:
     def __init__(self):
-        self.URL = 'https://llm.api.cloud.yandex.net/foundationModels/v1/completion'
         self.HEADERS = {'Authorization': f'Bearer {token}',
                         'Content-Type': 'application/json'}
-        self.TEMPERATURE = 0.5
 
     def ask_gpt(self, user_content: str, mode: str, session_id: int, user_id: int, special_mode: bool):
         tokens = 0
@@ -58,7 +56,7 @@ class GPT:
             "modelUri": f"gpt://{folder_id}/{GPT_MODEL}/latest",
             "completionOptions": {
                 "stream": False,
-                "temperature": self.TEMPERATURE,
+                "temperature": TEMPERATURE,
                 "maxTokens": MAX_MODEL_TOKENS
             },
             "messages": [
@@ -68,7 +66,7 @@ class GPT:
             ]
         }
         try:
-            result = requests.post(self.URL, headers=self.HEADERS, json=data)
+            result = requests.post(URL, headers=self.HEADERS, json=data)
             if 200 <= result.status_code < 400:
                 result = result.json()['result']['alternatives'][0]['message']['text']
                 tokens_in_assistant_content = count_tokens([{"role": "assistant", "text": result}])

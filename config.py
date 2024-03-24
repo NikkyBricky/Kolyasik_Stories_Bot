@@ -25,8 +25,10 @@ def make_prompt(settings_data):
     return prompt
 
 
-MAX_USERS = 1
+MAX_USERS = 3
 MAX_SESSIONS = 3
-MAX_TOKENS_IN_SESSION = 800
+MAX_TOKENS_IN_SESSION = 1000
 MAX_MODEL_TOKENS = 200
 GPT_MODEL = 'yandexgpt-lite'
+TEMPERATURE = 0.5
+URL = 'https://llm.api.cloud.yandex.net/foundationModels/v1/completion'
