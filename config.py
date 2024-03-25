@@ -31,5 +31,5 @@ MAX_SESSIONS = 3
 MAX_TOKENS_IN_SESSION = 1000
 MAX_MODEL_TOKENS = 250
 GPT_MODEL = 'yandexgpt-lite'
-TEMPERATURE = 0.3
+TEMPERATURE = 0.9
 URL = 'https://llm.api.cloud.yandex.net/foundationModels/v1/completion'
