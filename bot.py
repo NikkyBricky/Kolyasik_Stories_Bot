@@ -389,8 +389,10 @@ def start_generating(message, session_id):
     update_user_data("settings", user_id, "processing_answer", 0)
 
     bot.delete_message(chat_id=message.chat.id, message_id=msg.message_id)
-
-    tokens_in_session = find_latest_prompt(user_id)["tokens"]
+    try:  # на случай, если
+        tokens_in_session = find_latest_prompt(user_id)["tokens"]
+    except TypeError:
+        tokens_in_session = 0
 
     if not answer or tokens_in_session > MAX_TOKENS_IN_SESSION:  # если достигнут лимит токенов
         logging.info(f"Пользователем достигнут лимит токенов в сессии.")
