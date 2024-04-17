@@ -26,7 +26,7 @@ def make_prompt(settings_data):
     return prompt
 
 
-MAX_USERS = 3
+MAX_USERS = 4
 MAX_SESSIONS = 3
 MAX_TOKENS_IN_SESSION = 1000
 MAX_MODEL_TOKENS = 250
